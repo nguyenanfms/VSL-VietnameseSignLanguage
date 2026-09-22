@@ -1,0 +1,29 @@
+# ============================================================
+# Vietnamese Sign Language (VSL-400) — Python Dependencies
+# ============================================================
+# Cài đặt: pip install -r requirements.txt
+# Python >= 3.9 khuyến nghị
+# ============================================================
+
+# ---- Core Data Processing ----
+numpy>=1.24.0
+pandas>=2.0.0
+
+# ---- Computer Vision ----
+opencv-python>=4.8.0
+# Hoặc opencv-python-headless nếu không cần GUI:
+# opencv-python-headless>=4.8.0
+
+# ---- Pose Estimation & Keypoint Extraction ----
+mediapipe==0.10.14
+protobuf==4.25.3
+
+# ---- Progress Bar ----
+tqdm>=4.65.0
+
+# ---- Visualization (tùy chọn) ----
+matplotlib>=3.7.0
+
+# ---- Jupyter Notebook (tùy chọn, nếu cần chạy dạng notebook) ----
+# jupyter>=1.0.0
+# jupytext>=1.15.0

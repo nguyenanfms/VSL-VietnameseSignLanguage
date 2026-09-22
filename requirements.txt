@@ -1,0 +1,27 @@
+# ============================================================
+# Vietnamese Sign Language (VSL-400) — Python Dependencies
+# ============================================================
+# Cai dat: pip install -r requirements.txt
+# Phien ban Python khuyen nghi: Python >= 3.9
+# ============================================================
+
+# Core Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Computer Vision
+opencv-python>=4.8.0
+
+# Pose Estimation & Keypoint Extraction
+mediapipe==0.10.14
+protobuf==4.25.3
+
+# Progress Bar & Utilities
+tqdm>=4.65.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# Jupyter Environment (danh cho notebooks)
+jupyterlab>=4.0.0
+ipykernel>=6.25.0

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vsl-vietnamese-sign-language"
+version = "1.0.0"
+description = "Pipeline thu thap, tien xu ly va trich xuat 76 keypoints 3D cho he thong Nhan Dien Ngon Ngu Ky Hieu Viet Nam (VSL-400)."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Nguyen An", email = "nguyenanfms1401@gmail.com" },
+]
+license = { text = "MIT" }
+keywords = ["sign-language", "vsl-400", "vietnamese-sign-language", "mediapipe", "computer-vision", "keypoints"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Image Recognition",
+]
+dependencies = [
+  "numpy>=1.24.0",
+  "pandas>=2.0.0",
+  "opencv-python>=4.8.0",
+  "mediapipe==0.10.14",
+  "protobuf==4.25.3",
+  "tqdm>=4.65.0",
+  "matplotlib>=3.7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

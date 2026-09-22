@@ -1,0 +1,53 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+venv/
+.venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDE and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Video files (heavy datasets)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.flv
+
+# Feature outputs and datasets
+*.npy
+*.npz
+
+# Data directories (keep data/README.md)
+data/*
+!data/README.md
+
+# Legacy or generated artifact directories
+keypoints/
+test_vis/
+merged/
+data_splited/
+VSL_FULL_FRONT*/
+*.tsv
+preprocessed_vsl_metadata.json
+vsl_full_front.json
