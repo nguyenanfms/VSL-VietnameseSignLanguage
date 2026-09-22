@@ -77,64 +77,12 @@ VSL-VietnameseSignLanguage/
 ## 3. Sơ Đồ Quy Trình Xử Lý (Pipeline Architecture)
 
 <p align="center">
-  <img src="docs/assets/pipeline_overview.svg" alt="VSL-400 Pipeline Architecture" width="100%" />
-</p>
-
-### Minh Họa Thực Tế Trước Và Sau Khi Xử Lý (Visual Demonstration)
-
-<p align="center">
   <img src="docs/assets/before_after_comparison.png" alt="So Sánh Video Trước Và Sau Xử Lý" width="100%" />
 </p>
 
 - **Khung hình 1 (Trước xử lý)**: Video thô góc rộng (1280×720, 133 frames), chứa nhiều phông nền và khung hình tĩnh lúc người ký nghỉ tay. Thuật toán TBL phát hiện góc khuỷu tay $\theta < 160^\circ$ để định vị chính xác thời điểm thực hiện cử chỉ ký hiệu và xác định Bounding Box (vùng vàng $3.6 \times$ khoảng cách hai vai).
 - **Khung hình 2 (Sau tiền xử lý)**: Video sau khi cắt và nén về kích thước vuông chuẩn 224×224 pixel (72 frames), tập trung trực diện vào vùng đầu - vai - eo của người ký, loại bỏ hoàn toàn 61 frames tĩnh đầu/cuối giúp tiết kiệm bộ nhớ và tăng tốc độ huấn luyện mô hình.
 - **Khung hình 3 (Sau trích xuất 76 Keypoints 3D)**: Kết quả trích xuất đặc trưng qua MediaPipe Holistic gồm 3 panel (Toàn thân 3D, Bàn tay trái, Bàn tay phải) đã được chuẩn hóa độc lập về khoảng $[-0.5, 0.5]$ và lưu thành ma trận NumPy `.npy` với kích thước `[72, 76, 3]`.
-
-### Biểu Đồ Dòng Dữ Liệu Tương Tác (Interactive Flowchart)
-
-```mermaid
-flowchart TD
-    subgraph S1["GIAI ĐOẠN 1: THU THẬP & PHÂN CHIA DỮ LIỆU"]
-        A1["Dataset Gốc VSL-400 / VSL-UIT<br/>(split_1, split_2, ...)"] --> B1["Gộp Splits & Metadata JSON<br/>src/data/merge_splits.py"]
-        B1 --> C1["Phân Loại Video Theo Gloss<br/>src/data/categorize.py"]
-        C1 --> D1["Chia Tập Train/Test Theo Signer<br/>src/data/split_signer.py (~80/20)"]
-        D1 --> E1["Đầu ra: data/signer_splited/<br/>• train/{gloss}/*.mp4<br/>• test/{gloss}/*.mp4<br/>• global_signer_split.tsv"]
-    end
-
-    subgraph S2["GIAI ĐOẠN 2: TIỀN XỬ LÝ VIDEO (TBL & SPATIAL CROP)"]
-        E1 --> A2["Video Thô Từ Tập Train/Test"]
-        A2 --> B2["Pass 1: Định Vị Biên Thời Gian (TBL)<br/>• Góc khuỷu tay < 160° là active<br/>• Gộp gap 0.8s, lọc t_min >= 0.67s"]
-        B2 --> C2["Pass 2: Cắt Không Gian (Spatial Crop)<br/>• Box = Khoảng cách vai × 3.6<br/>• Căn giữa mũi, padding ±0.4s<br/>• Nén về chuẩn 224×224 px"]
-        C2 --> D2["Trích Xuất Metadata JSON Sau Xử Lý<br/>• FPS, Frames thực, Duration thực"]
-        D2 --> E2["Đầu ra: data/preprocessed_224/<br/>• Video chuẩn hóa 224×224 px<br/>• preprocessed_vsl_metadata.json"]
-    end
-
-    subgraph S3["GIAI ĐOẠN 3: TRÍCH XUẤT 76 KEYPOINTS 3D & EDA"]
-        E2 --> A3["Video Chuẩn Hóa 224×224"]
-        A3 --> B3["MediaPipe Holistic Extractor<br/>• 34 Body Landmarks (gồm neck)<br/>• 42 Hand Landmarks (21 mỗi tay)"]
-        B3 --> C3["Chuẩn Hóa Tọa Độ Không Gian ([-0.5, 0.5])<br/>• Body: BBox 6 anchor × 1.6 scale<br/>• Hands: BBox độc lập từng bàn tay"]
-        C3 --> D3["Lưu Ma Trận NumPy [num_frames, 76, 3]<br/>src/features/keypoints.py (.npy)"]
-        D3 --> E3["Trực Quan Hóa Skeleton & Thống Kê EDA<br/>• Video animation 3 panel (Body, Left, Right)<br/>• Phân tích phân bố frames & gloss"]
-        E3 --> F3["Đầu ra: data/keypoints/{gloss}/*.npy<br/>(Sẵn sàng huấn luyện GCN / Transformer / LSTM)"]
-    end
-
-    classDef stage1 fill:#0F172A,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
-    classDef stage2 fill:#0F172A,stroke:#A855F7,stroke-width:2px,color:#F8FAFC
-    classDef stage3 fill:#0F172A,stroke:#34D399,stroke-width:2px,color:#F8FAFC
-    class S1 stage1
-    class S2 stage2
-    class S3 stage3
-```
-
-### Bảng Thống Kê Chi Tiết Các Giai Đoạn
-
-| Tiêu chí | Giai đoạn 1: Thu thập & Phân chia | Giai đoạn 2: Tiền xử lý (TBL & Crop) | Giai đoạn 3: Trích xuất 76 Keypoints 3D |
-|:---|:---|:---|:---|
-| **Mục tiêu chính** | Hợp nhất dữ liệu thô, phân loại gloss và chia train/test theo người ký | Lọc bỏ tĩnh đầu/cuối, cắt ROI cơ thể và chuẩn hóa kích thước video | Trích xuất tọa độ 3D các khớp xương, chuẩn hóa và kiểm tra chất lượng |
-| **Dữ liệu đầu vào** | Các thư mục `split_*` thô kèm file JSON metadata | Video thô trong `data/signer_splited/` | Video đã crop 224×224 trong `data/preprocessed_224/` |
-| **Công nghệ / Thuật toán** | `Pathlib`, `Pandas`, `Shutil`, Hardlink/Copy | MediaPipe Pose, Elbow Angle 2D, Bounding Box 3.6×, OpenCV | MediaPipe Holistic, Anchor Normalization, NumPy, Matplotlib |
-| **Tham số cốt lõi** | `train_ratio = 0.8`, `seed = 42` | `theta = 160°`, `max_gap = 0.8s`, `t_min = 0.67s`, `padding = 0.4s` | 34 Body + 42 Hands, Scale 1.6×, BBox Range `[-0.5, 0.5]` |
-| **Đầu ra thành phẩm** | `data/signer_splited/train/`, `test/`, `global_signer_split.tsv` | `data/preprocessed_224/{gloss}/*.mp4` (224×224), `preprocessed_metadata.json` | `data/keypoints/{gloss}/*.npy` (shape `[num_frames, 76, 3]`), Video Animation |
 
 ---
 
