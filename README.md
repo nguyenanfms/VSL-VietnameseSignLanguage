@@ -76,39 +76,55 @@ VSL-VietnameseSignLanguage/
 
 ## 3. Sơ Đồ Quy Trình Xử Lý (Pipeline Architecture)
 
+<p align="center">
+  <img src="docs/assets/pipeline_overview.svg" alt="VSL-400 Pipeline Architecture" width="100%" />
+</p>
+
+### Biểu Đồ Dòng Dữ Liệu Tương Tác (Interactive Flowchart)
+
+```mermaid
+flowchart TD
+    subgraph S1["GIAI ĐOẠN 1: THU THẬP & PHÂN CHIA DỮ LIỆU"]
+        A1["Dataset Gốc VSL-400 / VSL-UIT<br/>(split_1, split_2, ...)"] --> B1["Gộp Splits & Metadata JSON<br/>src/data/merge_splits.py"]
+        B1 --> C1["Phân Loại Video Theo Gloss<br/>src/data/categorize.py"]
+        C1 --> D1["Chia Tập Train/Test Theo Signer<br/>src/data/split_signer.py (~80/20)"]
+        D1 --> E1["Đầu ra: data/signer_splited/<br/>• train/{gloss}/*.mp4<br/>• test/{gloss}/*.mp4<br/>• global_signer_split.tsv"]
+    end
+
+    subgraph S2["GIAI ĐOẠN 2: TIỀN XỬ LÝ VIDEO (TBL & SPATIAL CROP)"]
+        E1 --> A2["Video Thô Từ Tập Train/Test"]
+        A2 --> B2["Pass 1: Định Vị Biên Thời Gian (TBL)<br/>• Góc khuỷu tay < 160° là active<br/>• Gộp gap 0.8s, lọc t_min >= 0.67s"]
+        B2 --> C2["Pass 2: Cắt Không Gian (Spatial Crop)<br/>• Box = Khoảng cách vai × 3.6<br/>• Căn giữa mũi, padding ±0.4s<br/>• Nén về chuẩn 224×224 px"]
+        C2 --> D2["Trích Xuất Metadata JSON Sau Xử Lý<br/>• FPS, Frames thực, Duration thực"]
+        D2 --> E2["Đầu ra: data/preprocessed_224/<br/>• Video chuẩn hóa 224×224 px<br/>• preprocessed_vsl_metadata.json"]
+    end
+
+    subgraph S3["GIAI ĐOẠN 3: TRÍCH XUẤT 76 KEYPOINTS 3D & EDA"]
+        E2 --> A3["Video Chuẩn Hóa 224×224"]
+        A3 --> B3["MediaPipe Holistic Extractor<br/>• 34 Body Landmarks (gồm neck)<br/>• 42 Hand Landmarks (21 mỗi tay)"]
+        B3 --> C3["Chuẩn Hóa Tọa Độ Không Gian ([-0.5, 0.5])<br/>• Body: BBox 6 anchor × 1.6 scale<br/>• Hands: BBox độc lập từng bàn tay"]
+        C3 --> D3["Lưu Ma Trận NumPy [num_frames, 76, 3]<br/>src/features/keypoints.py (.npy)"]
+        D3 --> E3["Trực Quan Hóa Skeleton & Thống Kê EDA<br/>• Video animation 3 panel (Body, Left, Right)<br/>• Phân tích phân bố frames & gloss"]
+        E3 --> F3["Đầu ra: data/keypoints/{gloss}/*.npy<br/>(Sẵn sàng huấn luyện GCN / Transformer / LSTM)"]
+    end
+
+    classDef stage1 fill:#0F172A,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
+    classDef stage2 fill:#0F172A,stroke:#A855F7,stroke-width:2px,color:#F8FAFC
+    classDef stage3 fill:#0F172A,stroke:#34D399,stroke-width:2px,color:#F8FAFC
+    class S1 stage1
+    class S2 stage2
+    class S3 stage3
 ```
-                       [Video Gốc VSL-400 / VSL-UIT]
-                                    │
-                                    ▼
-       ┌─────────────────────────────────────────────────────────┐
-       │ Giai đoạn 1: Thu Thập & Tổ Chức Dữ Liệu                 │
-       │ - Gộp các split_1, split_2,...                          │
-       │ - Phân loại video vào từng thư mục theo tên gloss       │
-       │ - Chia train/test theo Signer ID (~80/20)               │
-       └────────────────────────────┬────────────────────────────┘
-                                    │
-                                    ▼
-       ┌─────────────────────────────────────────────────────────┐
-       │ Giai đoạn 2: Tiền Xử Lý Video (TBL & Spatial Crop)      │
-       │ - Pass 1 (TBL): Đánh giá góc khuỷu tay < 160°           │
-       │ - Pass 2 (Crop): Cắt vùng đầu-vai-eo (shoulder × 3.6)   │
-       │ - Nén và xuất video chuẩn 224x224 px                    │
-       │ - Trích xuất metadata JSON sau khi đã tiền xử lý        │
-       └────────────────────────────┬────────────────────────────┘
-                                    │
-                                    ▼
-       ┌─────────────────────────────────────────────────────────┐
-       │ Giai đoạn 3: Trích Xuất Đặc Trưng & Phân Tích EDA       │
-       │ - MediaPipe Holistic: 34 Body + 42 Hand keypoints       │
-       │ - Bounding Box Normalization về khoảng [-0.5, 0.5]      │
-       │ - Xuất ma trận NumPy: [num_frames, 76, 3] (.npy)        │
-       │ - Tạo video animation trực quan hóa skeleton 3 panel    │
-       │ - Thống kê phân bố frames, gloss và signers             │
-       └────────────────────────────┬────────────────────────────┘
-                                    │
-                                    ▼
-                      [File .npy Sẵn Sàng Huấn Luyện]
-```
+
+### Bảng Thống Kê Chi Tiết Các Giai Đoạn
+
+| Tiêu chí | Giai đoạn 1: Thu thập & Phân chia | Giai đoạn 2: Tiền xử lý (TBL & Crop) | Giai đoạn 3: Trích xuất 76 Keypoints 3D |
+|:---|:---|:---|:---|
+| **Mục tiêu chính** | Hợp nhất dữ liệu thô, phân loại gloss và chia train/test theo người ký | Lọc bỏ tĩnh đầu/cuối, cắt ROI cơ thể và chuẩn hóa kích thước video | Trích xuất tọa độ 3D các khớp xương, chuẩn hóa và kiểm tra chất lượng |
+| **Dữ liệu đầu vào** | Các thư mục `split_*` thô kèm file JSON metadata | Video thô trong `data/signer_splited/` | Video đã crop 224×224 trong `data/preprocessed_224/` |
+| **Công nghệ / Thuật toán** | `Pathlib`, `Pandas`, `Shutil`, Hardlink/Copy | MediaPipe Pose, Elbow Angle 2D, Bounding Box 3.6×, OpenCV | MediaPipe Holistic, Anchor Normalization, NumPy, Matplotlib |
+| **Tham số cốt lõi** | `train_ratio = 0.8`, `seed = 42` | `theta = 160°`, `max_gap = 0.8s`, `t_min = 0.67s`, `padding = 0.4s` | 34 Body + 42 Hands, Scale 1.6×, BBox Range `[-0.5, 0.5]` |
+| **Đầu ra thành phẩm** | `data/signer_splited/train/`, `test/`, `global_signer_split.tsv` | `data/preprocessed_224/{gloss}/*.mp4` (224×224), `preprocessed_metadata.json` | `data/keypoints/{gloss}/*.npy` (shape `[num_frames, 76, 3]`), Video Animation |
 
 ---
 
