@@ -80,6 +80,16 @@ VSL-VietnameseSignLanguage/
   <img src="docs/assets/pipeline_overview.svg" alt="VSL-400 Pipeline Architecture" width="100%" />
 </p>
 
+### Minh Họa Thực Tế Trước Và Sau Khi Xử Lý (Visual Demonstration)
+
+<p align="center">
+  <img src="docs/assets/before_after_comparison.png" alt="So Sánh Video Trước Và Sau Xử Lý" width="100%" />
+</p>
+
+- **Khung hình 1 (Trước xử lý)**: Video thô góc rộng (1280×720, 133 frames), chứa nhiều phông nền và khung hình tĩnh lúc người ký nghỉ tay. Thuật toán TBL phát hiện góc khuỷu tay $\theta < 160^\circ$ để định vị chính xác thời điểm thực hiện cử chỉ ký hiệu và xác định Bounding Box (vùng vàng $3.6 \times$ khoảng cách hai vai).
+- **Khung hình 2 (Sau tiền xử lý)**: Video sau khi cắt và nén về kích thước vuông chuẩn 224×224 pixel (72 frames), tập trung trực diện vào vùng đầu - vai - eo của người ký, loại bỏ hoàn toàn 61 frames tĩnh đầu/cuối giúp tiết kiệm bộ nhớ và tăng tốc độ huấn luyện mô hình.
+- **Khung hình 3 (Sau trích xuất 76 Keypoints 3D)**: Kết quả trích xuất đặc trưng qua MediaPipe Holistic gồm 3 panel (Toàn thân 3D, Bàn tay trái, Bàn tay phải) đã được chuẩn hóa độc lập về khoảng $[-0.5, 0.5]$ và lưu thành ma trận NumPy `.npy` với kích thước `[72, 76, 3]`.
+
 ### Biểu Đồ Dòng Dữ Liệu Tương Tác (Interactive Flowchart)
 
 ```mermaid
