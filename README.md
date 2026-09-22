@@ -1,68 +1,68 @@
-# VSL-VietnameseSignLanguage: Pipeline Tien Xu Ly & Trich Xuat Dac Trung 3D Keypoints
+# VSL-VietnameseSignLanguage: Pipeline Tiền Xử Lý & Trích Xuất Đặc Trưng 3D Keypoints
 
-He thong xu ly du lieu va trich xuat dac trung chuyen dong cho bai toan **Nhan Dien Ngon Ngu Ky Hieu Viet Nam (Vietnamese Sign Language - VSL)** dua tren dataset **VSL-400** va **VSL-UIT**.
+Hệ thống xử lý dữ liệu và trích xuất đặc trưng chuyển động cho bài toán **Nhận Diện Ngôn Ngữ Ký Hiệu Việt Nam (Vietnamese Sign Language - VSL)** dựa trên tập dữ liệu **VSL-400** và **VSL-UIT**.
 
-Du an cung cap mot quy trinh khao sat toan dien tu du lieu video tho, qua dinh vi bien thoi gian (Temporal Boundary Localization - TBL), cat khung hinh (Spatial Crop & Resize 224x224), den trich xuat 76 toa do keypoints 3D chuan hoa su dung MediaPipe Holistic phuc vu huan luyen cac mo hinh Deep Learning (GCN, Transformer, LSTM).
-
----
-
-## 1. Tinh Nang Noi Bat
-
-- **Gop va to chuc du lieu**: Ho tro gop nhieu phan doan (splits) thanh mot kho luu tru tap trung va phan loai tu dong vao tung thu muc gloss (tu vung ky hieu).
-- **Chia tap Train/Test theo Signer**: Chia tach du lieu theo dinh danh nguoi ky (Signer ID) de dam bao danh gia khach quan tren nhung nguoi ky chua tung xuat hien trong qua trinh huan luyen (Unseen-Signer Evaluation).
-- **Temporal Boundary Localization (TBL)**: Loc bo cac khung hinh bat dong o dau va cuoi video dua tren thuat toan tinh goc khuyu tay (Elbow Angle) tu MediaPipe Pose (nguong goc < 160 do xac dinh trang thai ky hieu active).
-- **Spatial Crop & Resize 224x224**: Tu dong xac dinh vung quan tam (Region of Interest - ROI) quanh phan dau, vai va eo dua tren khoang cach hai vai (shoulder width x 3.6), nén ve chuan 224x224 pixel.
-- **Trich xuat 76 Keypoints 3D Chuan Hoa**: Su dung MediaPipe Holistic de trich xuat 34 diem co the (bao gom diem neck tong hop) va 42 diem ban tay (21 diem moi ban tay). Toa do duoc chuan hoa doc lap theo bounding box ve khoang [-0.5, 0.5].
-- **Ho tro da hinh thuc su dung**: Cung cap day du ca 3 Jupyter Notebooks truc quan lan cac script CLI dong lenh ho tro da tien trinh (multiprocessing).
+Dự án cung cấp một quy trình hoàn chỉnh từ dữ liệu video thô, qua định vị biên thời gian (Temporal Boundary Localization - TBL), cắt khung hình (Spatial Crop & Resize 224x224), đến trích xuất 76 tọa độ keypoints 3D chuẩn hóa sử dụng MediaPipe Holistic phục vụ huấn luyện các mô hình Deep Learning (GCN, Transformer, LSTM).
 
 ---
 
-## 2. Cau Truc Thu Muc Du An
+## 1. Tính Năng Nổi Bật
+
+- **Gộp và tổ chức dữ liệu**: Hỗ trợ gộp nhiều phân đoạn (splits) thành một kho lưu trữ tập trung và phân loại tự động vào từng thư mục gloss (từ vựng ký hiệu).
+- **Chia tập Train/Test theo Signer**: Chia tách dữ liệu theo định danh người ký (Signer ID) để đảm bảo đánh giá khách quan trên những người ký chưa từng xuất hiện trong quá trình huấn luyện (Unseen-Signer Evaluation).
+- **Temporal Boundary Localization (TBL)**: Lọc bỏ các khung hình bất động ở đầu và cuối video dựa trên thuật toán tính góc khuỷu tay (Elbow Angle) từ MediaPipe Pose (ngưỡng góc < 160° xác định trạng thái ký hiệu active).
+- **Spatial Crop & Resize 224x224**: Tự động xác định vùng quan tâm (Region of Interest - ROI) quanh phần đầu, vai và eo dựa trên khoảng cách hai vai (shoulder width × 3.6), nén về kích thước chuẩn 224x224 pixel.
+- **Trích xuất 76 Keypoints 3D Chuẩn Hóa**: Sử dụng MediaPipe Holistic để trích xuất 34 điểm cơ thể (bao gồm điểm neck tổng hợp) và 42 điểm bàn tay (21 điểm mỗi bàn tay). Tọa độ được chuẩn hóa độc lập theo bounding box về khoảng [-0.5, 0.5].
+- **Hỗ trợ đa hình thức sử dụng**: Cung cấp đầy đủ cả 3 Jupyter Notebooks trực quan lẫn các script CLI dòng lệnh hỗ trợ đa tiến trình (multiprocessing).
+
+---
+
+## 2. Cấu Trúc Thư Mục Dự Án
 
 ```
 VSL-VietnameseSignLanguage/
 │
-├── .gitignore                      # Cau hinh loai tru du lieu video, npy, checkpoints
-├── LICENSE                         # Giay phep ma nguon mo MIT
-├── pyproject.toml                  # Cau hinh goi Python chuan
-├── README.md                       # Tai lieu huong dan tong quan du an
-├── requirements.txt                # Danh sach thu vien phu thuoc
+├── .gitignore                      # Cấu hình loại trừ dữ liệu video, npy, checkpoints
+├── LICENSE                         # Giấy phép mã nguồn mở MIT
+├── pyproject.toml                  # Cấu hình gói Python chuẩn
+├── README.md                       # Tài liệu hướng dẫn tổng quan dự án
+├── requirements.txt                # Danh sách thư viện phụ thuộc
 │
-├── notebooks/                      # Cac Jupyter Notebook tuong tac
-│   ├── 01_data_collection.ipynb              # Thu thap, gop splits, phan loai gloss & chia signer
-│   ├── 02_data_cleaning_and_imputation.ipynb # Tien xu ly TBL, Crop 224x224 & trich xuat JSON metadata
-│   ├── 03_exploratory_data_analysis.ipynb    # Trich xuat 76 keypoints 3D & phan tich thong ke EDA
-│   ├── requirements.txt                      # Dependencies danh rieng cho notebook
-│   └── README.md                             # Huong dan su dung notebooks
+├── notebooks/                      # Các Jupyter Notebook tương tác
+│   ├── 01_data_collection.ipynb              # Thu thập, gộp splits, phân loại gloss & chia signer
+│   ├── 02_data_cleaning_and_imputation.ipynb # Tiền xử lý TBL, Crop 224x224 & trích xuất JSON metadata
+│   ├── 03_exploratory_data_analysis.ipynb    # Trích xuất 76 keypoints 3D & phân tích thống kê EDA
+│   ├── requirements.txt                      # Dependencies dành riêng cho notebook
+│   └── README.md                             # Hướng dẫn sử dụng notebooks
 │
-├── src/                            # Ma nguon module hoa Python
+├── src/                            # Mã nguồn mô-đun hóa Python
 │   ├── __init__.py
 │   ├── data/
 │   │   ├── __init__.py
-│   │   ├── merge_splits.py         # Module gop splits va hop nhat danh sach JSON
-│   │   ├── categorize.py           # Module phan loai video theo gloss
-│   │   └── split_signer.py         # Module chia train/test theo Signer ID
+│   │   ├── merge_splits.py         # Mô-đun gộp splits và hợp nhất danh sách JSON
+│   │   ├── categorize.py           # Mô-đun phân loại video theo gloss
+│   │   └── split_signer.py         # Mô-đun chia train/test theo Signer ID
 │   ├── preprocessing/
 │   │   ├── __init__.py
-│   │   ├── tbl.py                  # Thuat toan dinh vi bien thoi gian TBL
-│   │   ├── cropper.py              # Thuat toan cat khong gian va resize ve 224x224
-│   │   ├── metadata.py             # Trich xuat metadata sau tien xu ly
-│   │   └── batch_processor.py      # Xu ly hang loat da nhan CPU (ProcessPoolExecutor)
+│   │   ├── tbl.py                  # Thuật toán định vị biên thời gian TBL
+│   │   ├── cropper.py              # Thuật toán cắt không gian và resize về 224x224
+│   │   ├── metadata.py             # Trích xuất metadata sau tiền xử lý
+│   │   └── batch_processor.py      # Xử lý hàng loạt đa nhân CPU (ProcessPoolExecutor)
 │   └── features/
 │       ├── __init__.py
-│       ├── keypoints.py            # Trich xuat 76 diem landmarks bang MediaPipe Holistic
-│       ├── normalizer.py           # Chuan hoa toa do co the (1.6x bbox) va ban tay
-│       └── visualizer.py           # Tao video animation skeleton 3 panel
+│       ├── keypoints.py            # Trích xuất 76 điểm landmarks bằng MediaPipe Holistic
+│       ├── normalizer.py           # Chuẩn hóa tọa độ cơ thể (1.6x bbox) và bàn tay
+│       └── visualizer.py           # Tạo video animation skeleton 3 panel
 │
-├── scripts/                        # Cac script CLI chay doc lap tu terminal
+├── scripts/                        # Các script CLI chạy độc lập từ terminal
 │   ├── 01_run_collection.py
 │   ├── 02_run_preprocessing.py
 │   └── 03_run_feature_extraction.py
 │
-├── data/                           # Thu muc chua du lieu (duoc bo qua trong git)
-│   └── README.md                   # Huong dan to chuc du lieu
+├── data/                           # Thư mục chứa dữ liệu (được bỏ qua trong git)
+│   └── README.md                   # Hướng dẫn tổ chức dữ liệu
 │
-└── legacy/                         # Luu tru cac file code / notebook nguyen ban
+└── legacy/                         # Lưu trữ các file code / notebook nguyên bản
     ├── extract_vsl_info.py
     ├── main_preprocessing.ipynb
     ├── merge_2_dataset.ipynb
@@ -74,54 +74,54 @@ VSL-VietnameseSignLanguage/
 
 ---
 
-## 3. So Do Quy Trinh Xu Ly (Pipeline Architecture)
+## 3. Sơ Đồ Quy Trình Xử Lý (Pipeline Architecture)
 
 ```
-                       [Video Goc VSL-400 / VSL-UIT]
+                       [Video Gốc VSL-400 / VSL-UIT]
                                     │
                                     ▼
        ┌─────────────────────────────────────────────────────────┐
-       │ Giai doan 1: Thu Thap & To Chuc Du Lieu                 │
-       │ - Gop cac split_1, split_2,...                          │
-       │ - Phan loai video vao tung thu muc theo ten gloss       │
+       │ Giai đoạn 1: Thu Thập & Tổ Chức Dữ Liệu                 │
+       │ - Gộp các split_1, split_2,...                          │
+       │ - Phân loại video vào từng thư mục theo tên gloss       │
        │ - Chia train/test theo Signer ID (~80/20)               │
        └────────────────────────────┬────────────────────────────┘
                                     │
                                     ▼
        ┌─────────────────────────────────────────────────────────┐
-       │ Giai doan 2: Tien Xu Ly Video (TBL & Spatial Crop)      │
-       │ - Pass 1 (TBL): Danh gia goc khuyu tay < 160 do         │
-       │ - Pass 2 (Crop): Cat vung dau-vai-eo (shoulder x 3.6)   │
-       │ - Nén va xuat video chuan 224x224 px                    │
-       │ - Trich xuat metadata JSON sau khi da tien xu ly        │
+       │ Giai đoạn 2: Tiền Xử Lý Video (TBL & Spatial Crop)      │
+       │ - Pass 1 (TBL): Đánh giá góc khuỷu tay < 160°           │
+       │ - Pass 2 (Crop): Cắt vùng đầu-vai-eo (shoulder × 3.6)   │
+       │ - Nén và xuất video chuẩn 224x224 px                    │
+       │ - Trích xuất metadata JSON sau khi đã tiền xử lý        │
        └────────────────────────────┬────────────────────────────┘
                                     │
                                     ▼
        ┌─────────────────────────────────────────────────────────┐
-       │ Giai doan 3: Trich Xuat Dac Trung & Phan Tich EDA       │
+       │ Giai đoạn 3: Trích Xuất Đặc Trưng & Phân Tích EDA       │
        │ - MediaPipe Holistic: 34 Body + 42 Hand keypoints       │
-       │ - Bounding Box Normalization ve khoang [-0.5, 0.5]      │
-       │ - Xuat ma tran NumPy: [num_frames, 76, 3] (.npy)        │
-       │ - Tao video animation truc quan hoa skeleton 3 panel    │
-       │ - Thong ke phan bo frames, gloss va signers             │
+       │ - Bounding Box Normalization về khoảng [-0.5, 0.5]      │
+       │ - Xuất ma trận NumPy: [num_frames, 76, 3] (.npy)        │
+       │ - Tạo video animation trực quan hóa skeleton 3 panel    │
+       │ - Thống kê phân bố frames, gloss và signers             │
        └────────────────────────────┬────────────────────────────┘
                                     │
                                     ▼
-                      [File .npy San Sang Huan Luyen]
+                      [File .npy Sẵn Sàng Huấn Luyện]
 ```
 
 ---
 
-## 4. Yeu Cau He Thong & Cai Dat
+## 4. Yêu Cầu Hệ Thống & Cài Đặt
 
-### Yeu Cau He Thong
+### Yêu Cầu Hệ Thống
 
-- **He dieu hanh**: Windows 10/11, Ubuntu 20.04+, macOS.
-- **Python**: 3.9 tro len (khuyen nghi 3.10 hoac 3.11).
-- **RAM**: Toi thieu 8 GB (khuyen nghi 16 GB+ khi xu ly da tien trinh).
-- **CPU**: 4 nhan tro len (khuyen nghi 8+ nhan de toi uu thoi gian crop).
+- **Hệ điều hành**: Windows 10/11, Ubuntu 20.04+, macOS.
+- **Python**: 3.9 trở lên (khuyến nghị 3.10 hoặc 3.11).
+- **RAM**: Tối thiểu 8 GB (khuyến nghị 16 GB+ khi xử lý đa tiến trình).
+- **CPU**: 4 nhân trở lên (khuyến nghị 8+ nhân để tối ưu thời gian crop).
 
-### Cac Buoc Cai Dat
+### Các Bước Cài Đặt
 
 1. Clone repository:
 ```bash
@@ -129,85 +129,85 @@ git clone https://github.com/nguyenanfms/VSL-VietnameseSignLanguage.git
 cd VSL-VietnameseSignLanguage
 ```
 
-2. Khoi tao moi truong ao (virtual environment):
+2. Khởi tạo môi trường ảo (virtual environment):
 ```bash
-# Tren Windows
+# Trên Windows
 python -m venv venv
 venv\Scripts\activate
 
-# Tren Linux / macOS
+# Trên Linux / macOS
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-3. Cai dat cac thu vien can thiet:
+3. Cài đặt các thư viện cần thiết:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Cai dat package o che do development (tuy chon):
+4. Cài đặt package ở chế độ development (tùy chọn):
 ```bash
 pip install -e .
 ```
 
 ---
 
-## 5. Huong Dan Su Dung
+## 5. Hướng Dẫn Sử Dụng
 
-### Cach 1: Su Dung Jupyter Notebooks
+### Cách 1: Sử Dụng Jupyter Notebooks
 
-Khoi dong Jupyter Lab hoac Jupyter Notebook de thuc hien tung buoc truc quan:
+Khởi động Jupyter Lab hoặc Jupyter Notebook để thực hiện từng bước trực quan:
 ```bash
 jupyter lab notebooks/
 ```
 
-- `01_data_collection.ipynb`: Thuc hien gop splits, phan chia gloss, chia train/test theo signer.
-- `02_data_cleaning_and_imputation.ipynb`: Thuc thi TBL va spatial crop, sau do tu dong trich xuat metadata JSON thuc te cua tap video sach.
-- `03_exploratory_data_analysis.ipynb`: Trich xuat 76 toa do 3D keypoints theo batch, tao video truc quan hoa 3 panel va phan tich thong ke dataset.
+- `01_data_collection.ipynb`: Thực hiện gộp splits, phân chia gloss, chia train/test theo signer.
+- `02_data_cleaning_and_imputation.ipynb`: Thực thi TBL và spatial crop, sau đó tự động trích xuất metadata JSON thực tế của tập video sạch.
+- `03_exploratory_data_analysis.ipynb`: Trích xuất 76 tọa độ 3D keypoints theo batch, tạo video trực quan hóa 3 panel và phân tích thống kê dataset.
 
-### Cach 2: Su Dung Cac Script CLI
+### Cách 2: Sử Dụng Các Script CLI
 
-Ban co the chay truc tiep pipeline tu dong lenh voi cac tham so tuy bien:
+Bạn có thể chạy trực tiếp pipeline từ dòng lệnh với các tham số tùy biến:
 
-#### Buoc 1: Thu thap va to chuc du lieu
+#### Bước 1: Thu thập và tổ chức dữ liệu
 ```bash
 python scripts/01_run_collection.py --action all --splits-root data/raw_splits --merged-dir data/merged
 ```
 
-#### Buoc 2: Tien xu ly video (TBL & Crop)
+#### Bước 2: Tiền xử lý video (TBL & Crop)
 ```bash
 python scripts/02_run_preprocessing.py --input-dir data/categorized --output-dir data/preprocessed_224 --target-size 224
 ```
 
-#### Buoc 3: Trich xuat keypoints 3D
+#### Bước 3: Trích xuất keypoints 3D
 ```bash
-# Chay batch so 1 tren tong so 4 batch
+# Chạy batch số 1 trên tổng số 4 batch
 python scripts/03_run_feature_extraction.py --input-dir data/signer_splited/train --output-dir data/keypoints --batch-idx 1 --total-batches 4
 
-# Tao video truc quan hoa skeleton mau tu file .npy da trich xuat
+# Tạo video trực quan hóa skeleton mẫu từ file .npy đã trích xuất
 python scripts/03_run_feature_extraction.py --visualize-sample data/keypoints/Anh/sample.npy --vis-out data/sample_skeleton.mp4
 ```
 
 ---
 
-## 6. Cau Truc Ma Tran Keypoints (76 Diem 3D)
+## 6. Cấu Trúc Ma Trận Keypoints (76 Điểm 3D)
 
-Moi file `.npy` dai dien cho mot video duoc luu duoi dang mang NumPy 3 chieu voi shape: `[num_frames, 76, 3]`:
+Mỗi file `.npy` đại diện cho một video được lưu dưới dạng mảng NumPy 3 chiều với shape: `[num_frames, 76, 3]`:
 
-| Truc (Axis) | Kich thuoc | Y nghia |
+| Trục (Axis) | Kích thước | Ý nghĩa |
 |-------------|------------|---------|
-| Axis 0 | `num_frames` | So luong khung hinh cua doan ky hieu sau TBL |
-| Axis 1 | 76 | Danh muc 76 diem khac nhau tren co the va ban tay |
-| Axis 2 | 3 | Toa do khong gian 3D (x, y, z) da duoc chuan hoa |
+| Axis 0 | `num_frames` | Số lượng khung hình của đoạn ký hiệu sau TBL |
+| Axis 1 | 76 | Danh mục 76 điểm khác nhau trên cơ thể và bàn tay |
+| Axis 2 | 3 | Tọa độ không gian 3D (x, y, z) đã được chuẩn hóa |
 
-Phan bo 76 diem:
-- **34 Body Landmarks**: 33 diem tu MediaPipe Pose + 1 diem `neck` tong hop (trung binh toa do hai vai).
-- **21 Left Hand Landmarks**: Co tay va cac khop ngon tay trai.
-- **21 Right Hand Landmarks**: Co tay va cac khop ngon tay phai.
+Phân bố 76 điểm:
+- **34 Body Landmarks**: 33 điểm từ MediaPipe Pose + 1 điểm `neck` tổng hợp (trung bình tọa độ hai vai).
+- **21 Left Hand Landmarks**: Cổ tay và các khớp ngón tay trái.
+- **21 Right Hand Landmarks**: Cổ tay và các khớp ngón tay phải.
 
 ---
 
-## 7. Giay Phep (License)
+## 7. Giấy Phép (License)
 
-Du an duoc phat hanh duoi giay phep [MIT License](LICENSE).
-Tac gia: **Nguyen An** (nguyenanfms1401@gmail.com).
+Dự án được phát hành dưới giấy phép [MIT License](LICENSE).
+Tác giả: **Nguyen An** (nguyenanfms1401@gmail.com).

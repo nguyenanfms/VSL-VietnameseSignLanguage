@@ -1,28 +1,28 @@
-# Huong Dan To Chuc Thu Muc Du Lieu (Data Directory)
+# Hướng Dẫn Tổ Chức Thư Mục Dữ Liệu (Data Directory)
 
-Thu muc `data/` duoc thiet ke de luu tru du lieu trong suot qua trinh xu ly pipeline VSL-400. Cac tep video va ma tran `.npy` nang deu duoc cau hinh trong `.gitignore` de tranh day len repository Git.
+Thư mục `data/` được thiết kế để lưu trữ dữ liệu trong suốt quá trình xử lý pipeline VSL-400. Các tệp video và ma trận `.npy` dung lượng lớn đều được cấu hình trong `.gitignore` để tránh bị đẩy lên repository Git.
 
 ---
 
-## Cau Truc De Xuat
+## Cấu Trúc Đề Xuất
 
 ```
 data/
-├── raw_splits/                 # Chua cac thu muc split_1, split_2,... (tu dataset goc)
-├── merged/                     # Ket qua sau khi gop: front_view/, left_view/, right_view/ va cac file .json
-├── categorized/                # Video front_view duoc phan loai vao tung thu muc theo ten gloss
-├── preprocessed_224/           # Video da qua TBL va crop ve 224x224
-├── preprocessed_metadata.json  # Metadata thuc te sau tien xu ly
-├── signer_splited/             # Du lieu chia train/test theo signer
+├── raw_splits/                 # Chứa các thư mục split_1, split_2,... (từ dataset gốc)
+├── merged/                     # Kết quả sau khi gộp: front_view/, left_view/, right_view/ và các file .json
+├── categorized/                # Video front_view được phân loại vào từng thư mục theo tên gloss
+├── preprocessed_224/           # Video đã qua TBL và crop về kích thước 224x224
+├── preprocessed_metadata.json  # Metadata thực tế sau tiền xử lý
+├── signer_splited/             # Dữ liệu chia train/test theo signer
 │   ├── train/
 │   ├── test/
 │   └── global_signer_split.tsv
-└── keypoints/                  # Ma tran 76 keypoints 3D .npy phan theo gloss
+└── keypoints/                  # Ma trận 76 keypoints 3D .npy phân theo gloss
 ```
 
 ---
 
-## Cac Buoc Tai Va Dat Du Lieu
+## Các Bước Tải Và Đặt Dữ Liệu
 
-1. Dat dataset VSL-400 goc vao `data/raw_splits/` hoac chi dinh duong dan tuy chon qua doi so dong lenh `--splits-root`.
-2. Chay pipeline theo thu tu qua cac script trong `scripts/` hoac qua cac notebook trong `notebooks/`.
+1. Đặt dataset VSL-400 gốc vào `data/raw_splits/` hoặc chỉ định đường dẫn tùy chọn qua đối số dòng lệnh `--splits-root`.
+2. Chạy pipeline theo thứ tự qua các script trong `scripts/` hoặc qua các notebook trong `notebooks/`.

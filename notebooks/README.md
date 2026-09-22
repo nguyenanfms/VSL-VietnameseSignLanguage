@@ -62,7 +62,7 @@ source venv/bin/activate
 ### 2. Cài đặt thư viện
 
 ```bash
-cd notebook
+cd notebooks
 pip install -r requirements.txt
 ```
 
