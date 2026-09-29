@@ -25,6 +25,7 @@ dist/
 .DS_Store
 Thumbs.db
 ehthumbs.db
+style.md
 
 # Video files (heavy datasets)
 *.mp4
