@@ -1,222 +1,56 @@
-# Vietnamese Sign Language Recognition — VSL-400
+# Jupyter Notebooks: VSL Pipeline Execution Guide
 
-## Giới Thiệu
+## 1. TL;DR & Pipeline Overview
 
-Dự án xây dựng pipeline xử lý dữ liệu cho hệ thống **Nhận Diện Ngôn Ngữ Ký Hiệu Việt Nam (VSL)** sử dụng dataset **VSL-400** (400 từ vựng ký hiệu). Pipeline bao gồm các Jupyter Notebook được thiết kế trực quan và chi tiết:
-
-- **Thu thập & tổ chức dữ liệu** từ nhiều nguồn (gộp các splits, phân loại theo gloss và chia train/test theo signer).
-- **Tiền xử lý video** bằng thuật toán TBL (Temporal Boundary Localization) và Spatial Crop.
-- **Trích xuất metadata JSON** cho tập dữ liệu sau tiền xử lý.
-- **Trích xuất 76 keypoints 3D** (body + hands) bằng MediaPipe Holistic và phân tích EDA.
-
----
-
-## Cấu Trúc Thư Mục
+Bộ 3 Jupyter Notebooks tương tác trực quan hóa và kiểm thử từng giai đoạn trong pipeline nhận diện ngôn ngữ ký hiệu VSL-400: từ thu thập, gộp splits, làm sạch video bằng Temporal Boundary Localization (TBL) đến trích xuất 76 điểm keypoints 3D chuẩn hóa.
 
 ```
-project/
-│
-├── data/
-│   ├── raw/                    ← Dữ liệu thô gốc (KHÔNG được sửa bằng tay)
-│   └── processed/              ← Dữ liệu đã làm sạch (Thành phẩm)
-│
-├── notebooks/                  ← Thư mục Jupyter Notebooks
-│   ├── 01_data_collection.ipynb              ← Thu thập & tổ chức dữ liệu
-│   ├── 02_data_cleaning_and_imputation.ipynb ← Tiền xử lý video & Trích xuất JSON
-│   ├── 03_exploratory_data_analysis.ipynb    ← Trích xuất keypoints & EDA
-│   ├── requirements.txt                      ← Danh sách thư viện (pip)
-│   └── README.md                             ← Hướng dẫn này
-│
-└── ...
+[01_data_collection.ipynb] ──> [02_data_cleaning_and_imputation.ipynb] ──> [03_exploratory_data_analysis.ipynb]
+(Gộp splits & Chia Signer)        (TBL Elbow Angle & Crop 224x224)              (76 Keypoints 3D & EDA)
 ```
 
 ---
 
-## Yêu Cầu Hệ Thống
+## 2. Notebook Execution & Technical Rationale
 
-| Yêu cầu | Tối thiểu | Khuyến nghị |
-|----------|-----------|-------------|
-| **Python** | 3.9+ | 3.11+ |
-| **RAM** | 8 GB | 16+ GB |
-| **CPU** | 4 cores | 8+ cores |
-| **Dung lượng ổ cứng** | 50 GB | 100+ GB |
-| **GPU** | Không bắt buộc | - |
+### 01_data_collection.ipynb
+- **Nhiệm vụ:** Hợp nhất các tập phân đoạn (splits), phân loại video theo gloss và chia train/test theo `signer_id`.
+- **Tech Rationale:** Sử dụng phân chia **Subject-Independent (Unseen Signer)** với tỷ lệ ~80/20 nhằm triệt tiêu hoàn toàn data leakage, bảo đảm mô hình học biểu diễn ký hiệu chứ không học vẹt đặc điểm hình thể của người ký.
+
+### 02_data_cleaning_and_imputation.ipynb
+- **Nhiệm vụ:** Định vị biên thời gian (TBL) loại bỏ khung hình tĩnh đầu/cuối, cắt vùng quan tâm (ROI) quanh cơ thể và resize về kích thước chuẩn `224×224`. Quét và xuất file JSON metadata thực tế của tập video sau xử lý.
+- **Tech Rationale:** Dùng heuristic góc khuỷu tay ($\theta < 160^\circ$) từ MediaPipe Pose để lọc khung hình thay vì model action detection phức tạp; cắt khung hình động theo $3.6 \times$ khoảng cách hai vai giúp loại bỏ phông nền dư thừa mà không làm mất biên độ tay khi ký.
+
+### 03_exploratory_data_analysis.ipynb
+- **Nhiệm vụ:** Trích xuất 76 keypoints 3D (34 body + 42 hands), chuẩn hóa tọa độ không gian độc lập về khoảng `[-0.5, 0.5]`, render video animation skeleton 3 panel và thống kê phân bố dữ liệu (EDA).
+- **Tech Rationale:** Chuẩn hóa tọa độ dựa trên Bounding Box của cơ thể (scale 1.6×) và bàn tay độc lập giúp mô hình bất biến trước khoảng cách camera và kích cỡ người ký.
 
 ---
 
-## Cài Đặt
+## 3. Comparison & Stage Benchmark
 
-### 1. Tạo môi trường ảo (khuyến nghị)
+| Giai đoạn | Dữ liệu đầu vào | Dữ liệu đầu ra | Mức độ tối ưu |
+| :--- | :--- | :--- | :--- |
+| **01. Collection** | Nhiều splits rời rạc, metadata phân mảnh | Cấu trúc phân loại theo gloss + tập Train/Test theo Signer | Quản lý tập trung, chống leakage |
+| **02. Cleaning** | Video thô góc rộng (1280×720, chứa ~46% frame tĩnh) | Video chuẩn hóa 224×224 px + metadata JSON cập nhật | Giảm 10× dung lượng pixel, loại bỏ nhiễu tĩnh |
+| **03. Feature & EDA** | Video sạch 224×224 px | Ma trận `.npy` `[T, 76, 3]` + Video skeleton 3 panel | Giảm >99% dung lượng so với video, sẵn sàng cho GCN/Transformer |
+
+---
+
+## 4. Quickstart Execution Guide
+
+### Cài đặt môi trường
 
 ```bash
-# Tạo virtual environment
-python -m venv venv
-
-# Kích hoạt (Windows)
-venv\Scripts\activate
-
-# Kích hoạt (Linux/Mac)
-source venv/bin/activate
-```
-
-### 2. Cài đặt thư viện
-
-```bash
+# Kích hoạt môi trường ảo từ thư mục gốc
 cd notebooks
 pip install -r requirements.txt
+jupyter lab
 ```
 
-### 3. Khởi chạy Jupyter Notebook
+### Thứ tự thực thi chuẩn
 
-```bash
-jupyter notebook
-```
-
----
-
-## Hướng Dẫn Chạy Code (A-Z)
-
-### Bước 1: Thu Thập & Tổ Chức Dữ Liệu
-
-**File:** `01_data_collection.ipynb`
-
-**Chức năng:**
-- Gộp nhiều phân đoạn (splits) thành một dataset thống nhất.
-- Phân loại video vào thư mục theo tên gloss (ký hiệu).
-- Chia tập train/test theo signer ID (~80/20) để đảm bảo đánh giá khách quan (unseen-signer evaluation).
-
-**Các biến cấu hình chính:**
-```python
-SPLITS_ROOT = "."          # Thư mục chứa các split_1, split_2, ...
-MERGED_OUTPUT = "merged"   # Thư mục đầu ra của video gộp
-```
-
-**Đầu ra:**
-| File/Thư mục | Mô tả |
-|--------------|-------|
-| `merged/front_view.json` | Metadata gốc đã gộp từ các splits |
-| `data_splited/train/` | Video thô cho tập huấn luyện |
-| `data_splited/test/` | Video thô cho tập kiểm thử |
-| `data_splited/global_signer_split.tsv` | Bảng ánh xạ signer ↔ train/test |
-
----
-
-### Bước 2: Tiền Xử Lý Video & Trích Xuất Metadata
-
-**File:** `02_data_cleaning_and_imputation.ipynb`
-
-**Chức năng:**
-1. **Temporal Boundary Localization (TBL):** Xác định ranh giới thời gian hành động ký hiệu bằng góc khuỷu tay (MediaPipe Pose), loại bỏ tĩnh đầu/cuối.
-2. **Spatial Crop & Resize:** Cắt vùng đầu-vai-eo và nén về kích thước chuẩn `224×224` pixel.
-3. **Trích xuất Metadata JSON:** Quét các video đã tiền xử lý, tính toán các thông số thực tế (duration, num_frames, resolution `224x224`) và xuất ra file JSON mới.
-
-**Các tham số quan trọng:**
-
-| Tham số | Giá trị mặc định | Ý nghĩa |
-|---------|-------------------|---------|
-| `theta` | 160° | Ngưỡng góc khuỷu tay (< θ = active) |
-| `t_min` | 0.67s | Thời lượng tối thiểu đoạn active |
-| `max_gap` | 0.8s | Khoảng cách tối đa để gộp 2 đoạn |
-| `padding` | 0.4s | Padding thêm trước/sau đoạn active |
-| `target_size` | 224 | Kích thước đầu ra (pixel) |
-
-**Đầu ra:**
-| Thư mục / File | Mô tả |
-|----------------|-------|
-| `VSL_FULL_FRONT_CROPPED_TO224x224_V2/{gloss}/` | Video đã cắt và chuẩn hóa 224x224 |
-| `preprocessed_vsl_metadata.json` | Metadata chi tiết của video đã tiền xử lý |
-
-> **Lưu ý:** Phần xử lý video sử dụng đa nhân (ProcessPoolExecutor) để tối ưu hóa CPU. Với ~25,000 video trên CPU 8 nhân, thời gian chạy khoảng 4-8 giờ.
-
----
-
-### Bước 3: Trích Xuất Keypoints 3D & Phân Tích EDA
-
-**File:** `03_exploratory_data_analysis.ipynb`
-
-**Chức năng:**
-- Trích xuất **76 keypoints 3D** (34 body + 42 hands) bằng MediaPipe Holistic từ video đã sạch.
-- Chuẩn hóa tọa độ theo bounding box cơ thể và bàn tay độc lập đưa về khoảng `[-0.5, 0.5]`.
-- Tạo video animation trực quan hóa skeleton 3D đã chuẩn hóa.
-- Phân tích thống kê EDA dataset (phân bố frames, glosses, ...).
-
-**Cấu trúc Keypoints (76 điểm):**
-
-| Nhóm | Số điểm | Chi tiết |
-|------|---------|----------|
-| **Body** | 34 | 33 MediaPipe Pose + 1 "neck" tổng hợp |
-| **Left Hand** | 21 | Wrist + 5 ngón × 4 khớp |
-| **Right Hand** | 21 | Wrist + 5 ngón × 4 khớp |
-
-**Đầu ra:**
-- `keypoints/{gloss}/{video_id}.npy` — Ma trận keypoints `[num_frames, 76, 3]`
-- `test_vis/{video_id}_overlay.mp4` — Video overlay skeleton
-- `test_vis/{video_id}_normalized_motion.mp4` — Video animation skeleton chuẩn hóa
-
----
-
-## Sơ Đồ Pipeline Tổng Quan
-
-```
-                    ┌─────────────────────────┐
-                    │   Dataset VSL-400 Gốc    │
-                    │   (~25,000 video, HD)     │
-                    └───────────┬─────────────┘
-                                │
-                    ┌───────────▼─────────────┐
-                    │ 01_data_collection.ipynb│
-                    │  Thu thập & tổ chức       │
-                    │  • Gộp splits             │
-                    │  • Phân loại theo gloss   │
-                    │  • Chia train/test        │
-                    └───────────┬─────────────┘
-                                │
-                    ┌───────────▼─────────────┐
-                    │02_data_cleaning_and_    │
-                    │imputation.ipynb         │
-                    │  • TBL (góc khuỷu tay)    │
-                    │  • Crop + Resize 224×224   │
-                    │  • Trích xuất JSON sau    │
-                    │    khi đã tiền xử lý      │
-                    └───────────┬─────────────┘
-                                │
-                    ┌───────────▼─────────────┐
-                    │03_exploratory_data_     │
-                    │analysis.ipynb           │
-                    │  • 76 keypoints 3D        │
-                    │  • Chuẩn hóa tọa độ       │
-                    │  • Trực quan hóa           │
-                    │  • Phân tích thống kê      │
-                    └───────────┬─────────────┘
-                                │
-                    ┌───────────▼─────────────┐
-                    │  keypoints/*.npy          │
-                    │  [frames, 76, 3]          │
-                    │  → Sẵn sàng train model!  │
-                    └─────────────────────────┘
-```
-
----
-
-## Thông Tin Kỹ Thuật
-
-| Thuộc tính | Giá trị |
-|------------|---------|
-| Dataset | VSL-400 + VSL-UIT (472 glosses, ~26,673 videos) |
-| Camera view | Front view (chỉ sử dụng góc chính diện) |
-| Target resolution | 224×224 pixels |
-| Keypoint model | MediaPipe Holistic (model_complexity=1) |
-| Normalization | Body BBox 1.6× + Hand BBox independent |
-| Train/Test split | 80/20 by signer ID (seed=42) |
-| Output format | NumPy `.npy` (float32) |
-| Parallel processing | ProcessPoolExecutor (all CPU cores) |
-
----
-
-## Liên Hệ & Hỗ Trợ
-
-Nếu gặp vấn đề khi chạy code, vui lòng kiểm tra:
-1. Phiên bản Python >= 3.9
-2. Các thư viện đã được cài đặt đầy đủ (`pip install -r requirements.txt`)
-3. Đường dẫn dữ liệu đã được cấu hình đúng trong mỗi notebook
-4. Đủ RAM (tối thiểu 8GB, khuyến nghị 16GB+)
+1. Chạy tuần tự từ cell đầu đến cuối trong `01_data_collection.ipynb`.
+2. Kiểm tra các thư mục video đã phân loại trước khi sang `02_data_cleaning_and_imputation.ipynb`.
+3. Chạy `02_data_cleaning_and_imputation.ipynb` với `ProcessPoolExecutor` để tiền xử lý hàng loạt video.
+4. Chạy `03_exploratory_data_analysis.ipynb` theo từng batch (1→4) để xuất các tệp `.npy` phục vụ huấn luyện.

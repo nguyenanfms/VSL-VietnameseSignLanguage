@@ -1,28 +1,35 @@
-# Hướng Dẫn Tổ Chức Thư Mục Dữ Liệu (Data Directory)
+# Cấu Trúc Quản Lý Dữ Liệu (Data Directory Structure)
 
-Thư mục `data/` được thiết kế để lưu trữ dữ liệu trong suốt quá trình xử lý pipeline VSL-400. Các tệp video và ma trận `.npy` dung lượng lớn đều được cấu hình trong `.gitignore` để tránh bị đẩy lên repository Git.
+## 1. TL;DR & Quy Ước Lưu Trữ
+
+Thư mục `data/` tổ chức dữ liệu theo từng giai đoạn trong pipeline VSL. Toàn bộ file dung lượng lớn (`.mp4`, `.npy`, `.json` lớn) đều được tự động loại trừ bởi `.gitignore` nhằm bảo vệ git repository gọn nhẹ và sạch sẽ.
 
 ---
 
-## Cấu Trúc Đề Xuất
+## 2. Directory Layout & Flow
 
 ```
 data/
-├── raw_splits/                 # Chứa các thư mục split_1, split_2,... (từ dataset gốc)
-├── merged/                     # Kết quả sau khi gộp: front_view/, left_view/, right_view/ và các file .json
-├── categorized/                # Video front_view được phân loại vào từng thư mục theo tên gloss
-├── preprocessed_224/           # Video đã qua TBL và crop về kích thước 224x224
-├── preprocessed_metadata.json  # Metadata thực tế sau tiền xử lý
-├── signer_splited/             # Dữ liệu chia train/test theo signer
-│   ├── train/
-│   ├── test/
-│   └── global_signer_split.tsv
-└── keypoints/                  # Ma trận 76 keypoints 3D .npy phân theo gloss
+├── raw_splits/                 # Chứa các tập split_1, split_2,... (dataset gốc từ tác giả)
+├── merged/                     # Tập hợp nhất các view và file JSON metadata gốc
+├── categorized/                # Video front_view đã gom theo từng thư mục gloss
+├── preprocessed_224/           # Video sạch sau TBL và crop chuẩn 224×224 px
+├── preprocessed_metadata.json  # Metadata thực tế sau tiền xử lý (FPS, Resolution, Frames)
+├── signer_splited/             # Dữ liệu phân tách theo Signer ID
+│   ├── train/                  # Tập huấn luyện (~80% số signers)
+│   ├── test/                   # Tập kiểm thử độc lập (~20% số signers - Unseen)
+│   └── global_signer_split.tsv # Bảng ánh xạ Signer ID <-> Train/Test
+└── keypoints/                  # Ma trận 76 keypoints 3D dạng .npy [T, 76, 3] phân theo gloss
 ```
 
 ---
 
-## Các Bước Tải Và Đặt Dữ Liệu
+## 3. Data Flow & Stage Verification
 
-1. Đặt dataset VSL-400 gốc vào `data/raw_splits/` hoặc chỉ định đường dẫn tùy chọn qua đối số dòng lệnh `--splits-root`.
-2. Chạy pipeline theo thứ tự qua các script trong `scripts/` hoặc qua các notebook trong `notebooks/`.
+| Thư mục | Nguồn sinh ra | Định dạng | Mục đích sử dụng |
+| :--- | :--- | :--- | :--- |
+| `raw_splits/` | Giải nén ban đầu | MP4 (Gốc đa phân giải) | Dữ liệu thô ban đầu |
+| `categorized/` | Bước 01 Collection | MP4 gom theo class | Chuẩn bị cho tiền xử lý |
+| `preprocessed_224/` | Bước 02 Preprocessing | MP4 224×224 px | Video đã cắt tĩnh và chuẩn kích thước |
+| `signer_splited/` | Bước 01/02 Splitting | MP4 chia Train/Test | Đảm bảo Unseen Signer evaluation |
+| `keypoints/` | Bước 03 Feature Extraction | NumPy `.npy` `float32` | Huấn luyện trực tiếp trên mô hình GCN / Transformer |
